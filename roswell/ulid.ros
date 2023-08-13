@@ -1,0 +1,23 @@
+#!/bin/sh
+#|-*- mode:lisp -*-|#
+#|
+exec ros -Q -- $0 "$@"
+|#
+
+;; Use `+Q`  if you don't have Quicklisp dependencies to save startup time.
+
+(defun help ()
+  (format t "~&Usage:
+
+  ulid [name]
+"))
+
+;; XXX: this load does not load from everywhere
+;; It doesn't work when run as a script.
+(load (truename "ulid.asd"))
+(ql:quickload "ulid")
+
+(defun main (&rest argv)
+  "Optional name parameter."
+  ;; CLI args parsing is done in %main.
+  (ulid::%main argv))
