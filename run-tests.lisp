@@ -6,4 +6,5 @@
 
 (in-package :ulid-tests)
 
-(uiop:quit (if (run-all-tests) 0 1))
+(fiveam:run-all-tests)
+;(uiop:quit (if (run-all-tests) 0 1))

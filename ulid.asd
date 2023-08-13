@@ -10,7 +10,7 @@
   :source-control (:git "")
 
   ;; Dependencies.
-  :depends-on ()
+  :depends-on ("cl+ssl" "local-time")
 
   ;; Project stucture.
   :serial t
@@ -18,6 +18,8 @@
                         :serial t
                         :components ((:file "packages")
                                      (:file "ulid"))))
+
+  :in-order-to ((test-op (test-op ulid-tests)))
 
   ;; Build a binary:
   ;; don't change this line.
