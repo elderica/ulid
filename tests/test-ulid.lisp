@@ -81,7 +81,7 @@
 (in-suite ulid)
 
 (test should-return-correct-length
-  (is (eql (length (ulid::ulid))
+  (is (eql (length (ulid:ulid))
 	   26)))
 
 (def-suite testmain
