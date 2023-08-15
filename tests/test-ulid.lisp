@@ -57,6 +57,11 @@
   (is (eql (length (ulid:ulid))
 	   26)))
 
+(test should-return-expected-encoded-timestamp-component-result
+  (is (string-equal (ulid:ulid 1469918176385)
+		    "01ARYZ6S41"
+		    :end1 10)))
+
 (def-suite testmain
     :description "test suite 1")
 

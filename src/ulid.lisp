@@ -62,8 +62,8 @@
 	finally (return enct)))
 
 
-(defun ulid ()
-  (let ((enct (encode-timestamp (get-current-unix-msec)
+(defun ulid (&optional (unix-msec (get-current-unix-msec)))
+  (let ((enct (encode-timestamp unix-msec
 				*encoded-timestamp-length*))
 	(encr (encode-randomness *encoded-randomness-length*)))
     (concatenate 'string enct encr)))
