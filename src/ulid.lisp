@@ -30,6 +30,7 @@
 			  (simple-array (unsigned-byte 8) (*)))
 		generate-randomness))
 (defun generate-randomness (len)
+  "Generate vector of 5-bits random number."
   (loop with randomness = (cl+ssl:random-bytes len)
 	for i upto (1- len)
 	do (setf (aref randomness i)
@@ -37,7 +38,11 @@
 			 *crockford-bitmask*))
 	finally (return randomness)))
 
+(declaim (ftype (function ((integer 0 *))
+			  (simple-array character (*)))
+		encode-randomness))
 (defun encode-randomness (len)
+  "Return randomness encoded with Crockford's Base32."
   (loop with randomness = (generate-randomness len)
 	with encoded-randomness = (make-string len)
 	for i upto (1- len)
@@ -47,24 +52,32 @@
 	finally (return encoded-randomness)))
 
 (defun get-current-unix-msec ()
+  "Get the current time in milliseconds."
   (let ((tm (local-time:now)))
     (+ (* 1000 (local-time:timestamp-to-unix tm))
        (local-time:timestamp-millisecond tm))))
 
-
-(defun encode-timestamp (now len)
+(declaim (ftype (function ((integer 0 *) (integer 0 *))
+			  (simple-string *))
+		encode-base32))
+(defun encode-base32 (int len)
+  "Encode integer to string with Crockford's Base32."
   (loop with enct = (make-string len)
 	for i from (1- len) downto 0
 	do (setf (aref enct i)
 		 (aref *crockford-alphabet*
-		       (logand now *crockford-bitmask*)))
-	   (setf now (ash now -5))
+		       (logand (ash int (* -5 (- len 1 i)))
+				    *crockford-bitmask*)))
 	finally (return enct)))
 
 
+(declaim (ftype (function (&optional (integer 0 *))
+			  (simple-string 26))
+		ulid))
 (defun ulid (&optional (unix-msec (get-current-unix-msec)))
-  (let ((enct (encode-timestamp unix-msec
-				*encoded-timestamp-length*))
+  "Generate ULID from seed time or current time if no seed is given."
+  (let ((enct (encode-base32 unix-msec
+			     *encoded-timestamp-length*))
 	(encr (encode-randomness *encoded-randomness-length*)))
     (concatenate 'string enct encr)))
 
