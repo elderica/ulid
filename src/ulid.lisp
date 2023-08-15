@@ -4,7 +4,7 @@
 (defparameter *crockford-alphabet* "0123456789ABCDEFGHJKMNPQRSTVWXYZ")
 (defparameter *crockford-bitmask* #x1F)
 (defparameter *encoded-timestamp-length* 10)
-(defparameter *encoded-random-length* 16)
+(defparameter *encoded-randomness-length* 16)
 
 (declaim (ftype (function ((vector (unsigned-byte 8) *))
 			  (integer 0 *))
@@ -24,27 +24,27 @@
 	do (setf (aref vec i)
 		 (logand (ash int (* -8 (- len 1 i)))
 			 #xFF))
-	   finally (return vec)))
+	finally (return vec)))
 
 (declaim (ftype (function ((integer 0 *))
 			  (simple-array (unsigned-byte 8) (*)))
-		random-bytes))
-(defun random-bytes (len)
-  (loop with random-bytes = (cl+ssl:random-bytes len)
+		generate-randomness))
+(defun generate-randomness (len)
+  (loop with randomness = (cl+ssl:random-bytes len)
 	for i upto (1- len)
-	do (setf (aref random-bytes i)
-		 (logand (aref random-bytes i)
+	do (setf (aref randomness i)
+		 (logand (aref randomness i)
 			 *crockford-bitmask*))
-	finally (return random-bytes)))
+	finally (return randomness)))
 
-(defun encode-random (len)
-  (loop with random-bytes = (random-bytes len)
-	with encoded-random = (make-string len)
+(defun encode-randomness (len)
+  (loop with randomness = (generate-randomness len)
+	with encoded-randomness = (make-string len)
 	for i upto (1- len)
-	do (setf (aref encoded-random i)
+	do (setf (aref encoded-randomness i)
 		 (aref *crockford-alphabet*
-		       (aref random-bytes i)))
-	     finally (return encoded-random)))
+		       (aref randomness i)))
+	finally (return encoded-randomness)))
 
 (defun get-current-unix-msec ()
   (let ((tm (local-time:now)))
@@ -52,7 +52,7 @@
        (local-time:timestamp-millisecond tm))))
 
 
-(defun encode-time (now len)
+(defun encode-timestamp (now len)
   (loop with enct = (make-string len)
 	for i from (1- len) downto 0
 	do (setf (aref enct i)
@@ -63,9 +63,9 @@
 
 
 (defun ulid ()
-  (let ((enct (encode-time (get-current-unix-msec)
-			   *encoded-timestamp-length*))
-	(encr (encode-random *encoded-random-length*)))
+  (let ((enct (encode-timestamp (get-current-unix-msec)
+				*encoded-timestamp-length*))
+	(encr (encode-randomness *encoded-randomness-length*)))
     (concatenate 'string enct encr)))
 
 

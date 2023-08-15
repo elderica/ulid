@@ -27,27 +27,27 @@
   (is (equalp (ulid::integer-to-bytes #xDEADBEEF 8)
 	      (vector #x00 #x00 #x00 #x00 #xDE #xAD #xBE #xEF))))
 
-(def-suite encode-time)
-(in-suite encode-time)
+(def-suite encode-timestamp)
+(in-suite encode-timestamp)
 
 (test should-return-expected-encoded-result
-  (is (equalp (ulid::encode-time 1469918176385 10)
+  (is (equalp (ulid::encode-timestamp 1469918176385 10)
 	      "01ARYZ6S41")))
 
 (test should-change-length-property
-  (is (equalp (ulid::encode-time 1470264322240 12)
+  (is (equalp (ulid::encode-timestamp 1470264322240 12)
 	      "0001AS99AA60")))
 
 (test should-truncate-time-if-not-enough-length
-  (is (equalp (ulid::encode-time 1470118279201 8)
+  (is (equalp (ulid::encode-timestamp 1470118279201 8)
 	      "AS4Y1E11")))
 
 
-(def-suite encode-random)
-(in-suite encode-random)
+(def-suite encode-randomness)
+(in-suite encode-randomness)
 
 (test should-return-correct-length
-  (is (eql (length (ulid::encode-random 12))
+  (is (eql (length (ulid::encode-randomness 12))
 	   12)))
 
 (def-suite ulid)
