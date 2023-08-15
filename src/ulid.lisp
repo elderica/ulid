@@ -1,6 +1,5 @@
 (in-package :ulid)
 
-;; Define your project functionality here..
 (defparameter *crockford-alphabet* "0123456789ABCDEFGHJKMNPQRSTVWXYZ")
 (defparameter *crockford-bitmask* #x1F)
 (defparameter *encoded-timestamp-length* 10)
@@ -82,13 +81,13 @@
     (concatenate 'string enct encr)))
 
 
-(defun greet (&optional (name "elderica"))
-  (format t "Hello ~a from ~a!~&" name "ulid"))
+(defun print-ulid ()
+  (format t "~a~%" (ulid)))
 
 (defun help ()
   (format t "~&Usage:
 
-  ulid [name]~&"))
+  ulid~&"))
 
 (defun %main (argv)
   "Parse CLI args."
@@ -97,8 +96,7 @@
     ;; clingon, unix-opts, defmain, adopt… when needed.
     (help)
     (uiop:quit))
-  (greet  (or (first argv)
-              "dear lisp user")))
+  (print-ulid))
 
 (defun main ()
   "Entry point for the executable.
