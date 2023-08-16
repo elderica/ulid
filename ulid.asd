@@ -17,7 +17,8 @@
   :components ((:module "src"
                         :serial t
                         :components ((:file "packages")
-                                     (:file "ulid"))))
+                                     (:file "ulid")
+				     (:file "main"))))
 
   :in-order-to ((test-op (test-op ulid-tests)))
 
