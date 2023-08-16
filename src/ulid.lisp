@@ -1,9 +1,9 @@
 (in-package :ulid)
 
 (defparameter *crockford-alphabet* "0123456789ABCDEFGHJKMNPQRSTVWXYZ")
-(defparameter *crockford-bitmask* #x1F)
-(defparameter *encoded-timestamp-length* 10)
-(defparameter *encoded-randomness-length* 16)
+(defconstant +crockford-bitmask+ #x1F)
+(defconstant +encoded-timestamp-length+ 10)
+(defconstant +encoded-randomness-length+ 16)
 
 (declaim (ftype (function ((vector (unsigned-byte 8) *))
 			  (integer 0 *))
@@ -34,7 +34,7 @@
 	for i upto (1- len)
 	do (setf (aref randomness i)
 		 (logand (aref randomness i)
-			 *crockford-bitmask*))
+			 +crockford-bitmask+))
 	finally (return randomness)))
 
 (declaim (ftype (function ((integer 0 *))
@@ -66,7 +66,7 @@
 	do (setf (aref enct i)
 		 (aref *crockford-alphabet*
 		       (logand (ash int (* -5 (- len 1 i)))
-				    *crockford-bitmask*)))
+			       +crockford-bitmask+)))
 	finally (return enct)))
 
 
@@ -76,6 +76,6 @@
 (defun ulid (&optional (unix-msec (get-current-unix-msec)))
   "Generate ULID from seed time or current time if no seed is given."
   (let ((enct (encode-base32 unix-msec
-			     *encoded-timestamp-length*))
-	(encr (encode-randomness *encoded-randomness-length*)))
+			     +encoded-timestamp-length+))
+	(encr (encode-randomness +encoded-randomness-length+)))
     (concatenate 'string enct encr)))
