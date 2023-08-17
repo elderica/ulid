@@ -2,53 +2,84 @@
 
 (defparameter *crockford-alphabet* "0123456789ABCDEFGHJKMNPQRSTVWXYZ")
 (defconstant +crockford-bitmask+ #x1F)
-(defconstant +encoded-timestamp-length+ 10)
-(defconstant +encoded-randomness-length+ 16)
+(defparameter *decode-table*
+  (alexandria:alist-hash-table
+   (loop for i from 0
+	 for c across *crockford-alphabet*
+	 collect (cons c i))))
 
-(declaim (ftype (function ((vector (unsigned-byte 8) *))
-			  (integer 0 *))
-		bytes-to-integer))
-(defun bytes-to-integer (bytes)
-  (loop with total = 0
-	for byte across bytes
-	do (setf total (+ byte (ash total 8)))
-	finally (return total)))
+(deftype u128 ()
+  "represents unsigned 128-bit integer."
+  '(unsigned-byte 128))
 
-(declaim (ftype (function ((integer 0 *) (integer 0 *))
-			  (vector (unsigned-byte 8) *))
-		integer-to-bytes))
-(defun integer-to-bytes (int len)
-  (loop with vec = (make-array len :element-type '(unsigned-byte 8))
-	for i from 0 upto (1- len)
-	do (setf (aref vec i)
-		 (logand (ash int (* -8 (- len 1 i)))
-			 #xFF))
-	finally (return vec)))
+(deftype base32 ()
+  "represents Crockford's Base32 string."
+  '(string 26))
 
-(declaim (ftype (function ((integer 0 *))
-			  (simple-array (unsigned-byte 8) (*)))
-		generate-randomness))
-(defun generate-randomness (len)
-  "Generate vector of 5-bits random number."
-  (loop with randomness = (cl+ssl:random-bytes len)
-	for i upto (1- len)
-	do (setf (aref randomness i)
-		 (logand (aref randomness i)
-			 +crockford-bitmask+))
-	finally (return randomness)))
+(defstruct ulid
+  "holds unsigned 128-bit integer that represents unique lexicographically sortable identifier.
+The first 48 bits of 128 bits are a UNIX timestamp in milliseconds for lexicographically sorting.
+The remaining 80 bits are randomness that ensure the identifier is unique."
+  (timestamp-randomness #x00000000000000000000000000000000
+ :type u128))
 
-(declaim (ftype (function ((integer 0 *))
-			  (simple-array character (*)))
-		encode-randomness))
-(defun encode-randomness (len)
-  "Return randomness encoded with Crockford's Base32."
-  (loop with randomness = (generate-randomness len)
-	with encoded-randomness = (make-string len)
-	for i upto (1- len)
-	do (setf (aref encoded-randomness i)
+(defun ulid-timestamp (u)
+  "returns timestamp part of ulid."
+  (ash (ulid-timestamp-randomness u) -80))
+
+(defun ulid-randomness (u)
+  "returns randomness part of ulid."
+  (logand (ulid-timestamp-randomness u)
+	  #xFFFFFFFFFFFFFFFFFFFF))
+
+(define-condition ulid-out-of-range (error)
+  ((datum :initarg :datum
+	  :reader datum))
+  (:report (lambda (condition stream)
+	     (format stream "out of range: ~a" (datum condition)))))
+
+(defun ulid->u128 (u)
+  "converts unsigned 128-bit integer to ulid."
+  (declare (type ulid u))
+  (ulid-timestamp-randomness u))
+
+(defun u128->base32 (hw)
+  "encodes unsigned 128-bit integer with Crockford's Base32."
+  (declare (type u128 hw))
+  (loop with hw = hw
+	with b32 = (make-string 26)
+	for i from 25 downto 0
+	do (setf (aref b32 i)
 		 (aref *crockford-alphabet*
-		       (aref randomness i)))
-	finally (return encoded-randomness)))
+		       (logand (ash hw (* -5 (- 25 i))) #x1F)))
+	finally (return b32)))
+
+(defun ulid->base32 (u)
+  "creates Crockford's Base32 encoded string that represents the ulid."
+  (declare (type ulid u))
+  (u128->base32 (ulid-timestamp-randomness u)))
+
+(defun base32->u128 (b32)
+  "decodes Crockford's Base32 string."
+  (declare (type base32 b32))
+  (unless (find (aref b32 0) "01234567")
+    (error (make-condition 'ulid-out-of-range :datum b32)))
+  (loop with n = 0
+	with ub32 = (string-upcase b32)
+	for c across ub32
+	do (setf n (logior (ash n 5)
+			   (gethash c *decode-table* 0)))
+	   finally (return n)))
+
+(defun u128->ulid (hw)
+  "converts ulid to unsigned 128-bit integer."
+  (declare (type u128 hw))
+  (make-ulid :timestamp-randomness hw))
+
+(defun base32->ulid (b32)
+  "construct ulid from Crockford's Base32 string."
+  (declare (type base32 b32))
+  (make-ulid :timestamp-randomness (base32->u128 b32)))
 
 (defun get-current-unix-msec ()
   "Get the current time in milliseconds."
@@ -56,26 +87,26 @@
     (+ (* 1000 (local-time:timestamp-to-unix tm))
        (local-time:timestamp-millisecond tm))))
 
-(declaim (ftype (function ((integer 0 *) (integer 0 *))
-			  (simple-string *))
-		encode-base32))
-(defun encode-base32 (int len)
-  "Encode integer to string with Crockford's Base32."
-  (loop with enct = (make-string len)
-	for i from (1- len) downto 0
-	do (setf (aref enct i)
-		 (aref *crockford-alphabet*
-		       (logand (ash int (* -5 (- len 1 i)))
-			       +crockford-bitmask+)))
-	finally (return enct)))
+(defun bytes-to-integer (bytes)
+  (declare (type (simple-array (unsigned-byte 8) (*)) bytes))
+  (loop with int = 0
+	for b across bytes
+	do (setf int
+		 (logior (ash int 8) b))
+	finally (return int)))
 
+(defun generate-randomness-from-cprng ()
+  "Generate 80-bits randomness from CPRNG"
+  (bytes-to-integer (cl+ssl:random-bytes 10)))
 
-(declaim (ftype (function (&optional (integer 0 *))
-			  (simple-string 26))
-		ulid))
-(defun ulid (&optional (unix-msec (get-current-unix-msec)))
-  "Generate ULID from seed time or current time if no seed is given."
-  (let ((enct (encode-base32 unix-msec
-			     +encoded-timestamp-length+))
-	(encr (encode-randomness +encoded-randomness-length+)))
-    (concatenate 'string enct encr)))
+(defun generate-randomness ()
+  (generate-randomness-from-cprng))
+
+(defun generate-now ()
+  "Generate ULID from current timestamp."
+  (let ((tm (get-current-unix-msec))
+	(rd (generate-randomness)))
+    (make-ulid :timestamp-randomness (logior (ash tm 80) rd))))
+
+;; TODO: timestamp overflow condition
+;; TODO: monotonic ULID factory

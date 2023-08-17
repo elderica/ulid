@@ -1,63 +1,40 @@
 (in-package :ulid-tests)
 
-(def-suite integer-and-bytes)
-(in-suite integer-and-bytes)
-
-(test test-bytes-to-integer-1
-  (is (equal
-       (ulid::bytes-to-integer
-	(make-array 2
-		    :element-type '(unsigned-byte 8)
-		    :initial-contents '(#xAB #xBA)))
-       #xABBA)))
-
-(test test-bytes-to-integer-2
-  (is (equal
-       (ulid::bytes-to-integer
-	(make-array 4
-		    :element-type '(unsigned-byte 8)
-		    :initial-contents '(#xDE #xAD #xBE #xEF)))
-       #xDEADBEEF)))
-
-(test test-integer-to-bytes-1
-  (is (equalp (ulid::integer-to-bytes #xDEADBEEF 4)
-	      (vector #xDE #xAD #xBE #xEF))))
-
-(test test-integer-to-bytes-2
-  (is (equalp (ulid::integer-to-bytes #xDEADBEEF 8)
-	      (vector #x00 #x00 #x00 #x00 #xDE #xAD #xBE #xEF))))
-
-(def-suite encode-base32)
-(in-suite encode-base32)
+(def-suite* encode-decode-base32)
 
 (test should-return-expected-encoded-result
-  (is (equalp (ulid::encode-base32 1469918176385 10)
-	      "01ARYZ6S41")))
+  (is (string-equal (ulid::u128->base32 1469918176385)
+		    "01ARYZ6S41"
+		    :start1 16)))
 
-(test should-change-length-property
-  (is (equalp (ulid::encode-base32 1470264322240 12)
-	      "0001AS99AA60")))
-
-(test should-truncate-time-if-not-enough-length
-  (is (equalp (ulid::encode-base32 1470118279201 8)
-	      "AS4Y1E11")))
-
-
-(def-suite encode-randomness)
-(in-suite encode-randomness)
+(def-suite* ulid)
 
 (test should-return-correct-length
-  (is (eql (length (ulid::encode-randomness 12))
-	   12)))
-
-(def-suite ulid)
-(in-suite ulid)
-
-(test should-return-correct-length
-  (is (eql (length (ulid:ulid))
+  (is (eql (length (ulid:ulid->base32 (ulid:generate-now)))
 	   26)))
 
-(test should-return-expected-encoded-timestamp-component-result
-  (is (string-equal (ulid:ulid 1469918176385)
-		    "01ARYZ6S41"
-		    :end1 10)))
+(def-suite* u128-ulid)
+
+(test reversible-conversion
+  (is (= (ulid->u128
+	  (u128->ulid 1469918176385))
+	 1469918176385)))
+
+(def-suite* base32-ulid)
+
+(test should-return-expected-base32-encoded-result
+  (is (string-equal (ulid->base32
+		     (u128->ulid #x41414141414141414141414141414141))
+		    "21850M2GA1850M2GA1850M2GA1")))
+
+(test should-return-decoded-integer
+  (is (= (base32->u128 "21850M2GA1850M2GA1850M2GA1")
+	 #x41414141414141414141414141414141)))
+
+(test should-return-decoded-ulid
+  (is (equalp (base32->ulid "21850M2GA1850M2GA1850M2GA1")
+	      (u128->ulid #x41414141414141414141414141414141))))
+
+(test should-throw-error-when-out-of-range-value
+  (signals ulid-out-of-range
+    (ulid:base32->u128 "80000000000000000000000000")))

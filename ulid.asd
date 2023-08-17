@@ -10,7 +10,7 @@
   :source-control (:git "")
 
   ;; Dependencies.
-  :depends-on ("cl+ssl" "local-time")
+  :depends-on ("cl+ssl" "local-time" "alexandria")
 
   ;; Project stucture.
   :serial t

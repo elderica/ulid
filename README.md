@@ -2,73 +2,37 @@
 
 Universally Unique Lexicographically Sortable Identifier
 
-# Usage
+# API
 
-Run from sources:
+## Struct: `ulid`
 
-    make run
-    # aka sbcl --load run.lisp
+holds unsigned 128-bit integer that represents unique lexicographically sortable identifier.
+The first 48 bits of 128 bits are a UNIX timestamp in milliseconds for lexicographically sorting.
+The remaining 80 bits are randomness that ensure the identifier is unique.
 
-choose your lisp:
+## Function: `base32->u128`
 
-    LISP=ccl make run
+decodes 26-character Crockford's Base32 to unsigned 128-bit integer.
 
-or build and run the binary:
+## Function `u128->base32`
+
+encodes unsigned 128-bit integer to 26-character Crockford's Base32.
+
+## Condition: `base32-timestamp-overflow`
+
+# Install
+
+First, you should clone this repository to `~/common-lisp/ulid`.
+
+Try ULID generation on your shell:
 
 ```
 $ make build
-$ ./ulid [name]
-Hello [name] from ulid
+$ ./ulid
 ```
 
-## Roswell integration
+You can copy `./ulid` binary anywhere you like.
 
-Roswell is an implementation manager and [script launcher](https://github.com/roswell/roswell/wiki/Roswell-as-a-Scripting-Environment).
-
-A POC script is in the roswell/ directory.
-
-Your users can install the script with `elderica/ulid`.
-
-# Dev
-
-Tests are defined with [Fiveam](https://common-lisp.net/project/fiveam/docs/).
-
-Run them from the terminal with `make test`. You should see a failing test.
-
-```bash
-$ make test
-Running test suite TESTMAIN
- Running test TEST1 f
- Did 1 check.
-    Pass: 0 ( 0%)
-    Skip: 0 ( 0%)
-    Fail: 1 (100%)
-
- Failure Details:
- --------------------------------
- TEST1 in TESTMAIN []:
-
-3
-
- evaluated to
-
-3
-
- which is not
-
-=
-
- to
-
-2
-
-Makefile:15: recipe for target 'test' failed
-
-$ echo $?
-2
-```
-
-On Slime, load the test package and run `run!`.
 
 ---
 

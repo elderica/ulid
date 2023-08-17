@@ -1,7 +1,9 @@
 (in-package :ulid)
 
 (defun print-ulid ()
-  (format t "~a~%" (ulid)))
+  (format t "~a~%"
+	  (ulid->base32
+	   (generate-now))))
 
 (defun help ()
   (format t "~&Usage:
