@@ -88,11 +88,10 @@ The remaining 80 bits are randomness that ensure the identifier is unique."
   (declare (type base32 b32))
   (make-ulid :timestamp-randomness (base32->u128 b32)))
 
-(defun get-current-unix-msec ()
-  "Get the current time in milliseconds."
-  (let ((tm (local-time:now)))
-    (+ (* 1000 (local-time:timestamp-to-unix tm))
-       (local-time:timestamp-millisecond tm))))
+(defun timestamp-to-unix-msec (tm)
+  (declare (type local-time:timestamp tm))
+  (+ (* 1000 (local-time:timestamp-to-unix tm))
+     (local-time:timestamp-millisecond tm)))
 
 (defun bytes-to-integer (bytes)
   (declare (type (simple-array (unsigned-byte 8) (*)) bytes))
@@ -106,20 +105,27 @@ The remaining 80 bits are randomness that ensure the identifier is unique."
   "Generate 80-bits randomness from CPRNG"
   (bytes-to-integer (cl+ssl:random-bytes 10)))
 
-(defun generate-randomness ()
-  (generate-randomness-from-cprng))
-
 (defun ulid-increment (u)
   (let ((rd (ulid-randomness u)))
     (if (= rd #xFFFFFFFFFFFFFFFFFFFF)
 	(error 'ulid-overflow :integer (ulid->u128 u))
 	(u128->ulid (1+ (ulid->u128 u))))))
 
-(defun generate-now ()
-  "Generate ULID from current timestamp."
-  (let ((tm (get-current-unix-msec))
-	(rd (generate-randomness)))
+(defun generate-from-timestamp-with-source (tm random)
+  (let ((tm (timestamp-to-unix-msec tm))
+	(rd (funcall random)))
     (make-ulid :timestamp-randomness (logior (ash tm 80) rd))))
 
-;; TODO: timestamp overflow condition
+(defun generate-with-source (random)
+  (generate-from-timestamp-with-source (local-time:now)
+				       random))
+
+(defun generate-from-timestamp (tm)
+  "Generate a `ulid` matching the given `local-time:timestamp`"
+  (generate-from-timestamp-with-source tm #'generate-randomness-from-cprng))
+
+(defun generate-now ()
+  "Generate ULID from current timestamp."
+  (generate-from-timestamp (local-time:now)))
+
 ;; TODO: monotonic ULID factory

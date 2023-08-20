@@ -20,6 +20,9 @@
 
    :ulid-increment
 
+   :generate-from-timestamp-with-source
+   :generate-with-source
+   :generate-from-timestamp
    :generate-now
 
    :main
