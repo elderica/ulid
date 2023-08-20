@@ -37,3 +37,6 @@ tramp
 
 # cask packages
 .cask/
+
+ulid
+README.html
