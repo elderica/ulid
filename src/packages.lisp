@@ -8,6 +8,7 @@
    :ulid-randomness
 
    :ulid-out-of-range
+   :ulid-overflow
 
    :ulid->u128
    :u128->base32
@@ -16,6 +17,8 @@
    :base32->u128
    :u128->ulid
    :base32->ulid
+
+   :ulid-increment
 
    :generate-now
 

@@ -38,6 +38,13 @@ The remaining 80 bits are randomness that ensure the identifier is unique."
   (:report (lambda (condition stream)
 	     (format stream "out of range: ~a" (datum condition)))))
 
+(define-condition ulid-overflow (error)
+  ((integer :initarg :integer
+	    :reader overflow-integer))
+  (:report (lambda (condition stream)
+	     (format stream "overflow when incrementing: ~a"
+		     (overflow-integer condition)))))
+
 (defun ulid->u128 (u)
   "converts unsigned 128-bit integer to ulid."
   (declare (type ulid u))
@@ -101,6 +108,12 @@ The remaining 80 bits are randomness that ensure the identifier is unique."
 
 (defun generate-randomness ()
   (generate-randomness-from-cprng))
+
+(defun ulid-increment (u)
+  (let ((rd (ulid-randomness u)))
+    (if (= rd #xFFFFFFFFFFFFFFFFFFFF)
+	(error 'ulid-overflow :integer (ulid->u128 u))
+	(u128->ulid (1+ (ulid->u128 u))))))
 
 (defun generate-now ()
   "Generate ULID from current timestamp."

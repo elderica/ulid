@@ -38,3 +38,24 @@
 (test should-throw-error-when-out-of-range-value
   (signals ulid-out-of-range
     (ulid:base32->u128 "80000000000000000000000000")))
+
+(def-suite* increment-ulid)
+
+(test increment-ulid-1
+  (let* ((u (base32->ulid "01BX5ZZKBKAZZZZZZZZZZZZZZZ"))
+	 (v (ulid-increment u)))
+    (is (string-equal
+	 "01BX5ZZKBKB000000000000000"
+	 (ulid->base32 v)))))
+
+(test increment-ulid-2
+  (let* ((u (base32->ulid "01BX5ZZKBKZZZZZZZZZZZZZZZX"))
+	 (v (ulid-increment u)))
+    (is (string-equal
+	 "01BX5ZZKBKZZZZZZZZZZZZZZZY"
+	 (ulid->base32 v)))))
+
+(test signals-error-when-max-randomness
+  (let ((u (base32->ulid "01BX5ZZKBKZZZZZZZZZZZZZZZZ")))
+    (signals ulid-overflow
+      (ulid-increment u))))
