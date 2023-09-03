@@ -2,7 +2,9 @@
 
 Universally Unique Lexicographically Sortable Identifier
 
-# Synoposis
+See details: https://github.com/ulid/spec
+
+# Synopsis
 
 ```lisp
 (asdf:load-system :ulid)
